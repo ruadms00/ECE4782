@@ -7,7 +7,7 @@ total = load("totalFeature.mat").total;
 featureName = load("featureName.mat").featureName1;
 %% Split
 % Split data into Train & Test
-cv = cvpartition(size(total, 1), 'HoldOut', 0.3);
+cv = cvpartition(size(total, 1), 'Leaveout', 'on');
 idx = cv.test;
 Xtrain = total(~idx,:);
 Ytrain = labels(~idx,:);
@@ -17,24 +17,20 @@ save('Xtrain.mat', 'Xtrain');
 save('Ytrain.mat', 'Ytrain');
 save('Xtest.mat', 'Xtest');
 save('Ytest.mat', 'Ytest');
-%% Split - K-Fold
-% Split data into K-Fold(10)
-
-cvKF10 = cvpartition(size(Xtrain, 1), 'KFold', 21);
-save('cvKF10.mat','cvKF10');
-
 
 %% MRMR :)
 [idxMRMR, scores] = fscmrmr(total, labels);
 MRMR = [idxMRMR; scores];
 save('MRMR.mat', 'MRMR');
 %% MRMR - Score Analysis :)
-%figure; plot([1:length(scores)], scores(idxMRMR))
+figure; plot([1:length(scores)], scores(idxMRMR));
+xlim([0 15]);
 title("MRMR Scores")
 xlabel("Number of Features")
+ylim
 ylabel("Score")
 for i = 1:21
-    fprintf('%s\n',featureName(idxMRMR(i),:));
+    %fprintf('%s\n',featureName(idxMRMR(i),:));
     %fprintf('%d\n',scores(:,idxMRMR(i)));
 end
 %% KNN(MRMR): Find Optimal K :)
@@ -47,7 +43,7 @@ for k=Ks
     knnMRMR_preds = [knnMRMR_preds, mean(knnMRMR_pred == Ytest)];
 end
 %% KNN(MRMR): Visualiztion - Accuracy :) pick 10
-%figure; plot(Ks, knnMRMR_preds);
+figure; plot(Ks, knnMRMR_preds);
 title("KNN w/ MRMR")
 xlabel("k")
 ylabel("Accuracy")
@@ -57,24 +53,24 @@ disp(max(knnMRMR_preds));
 
 % %% KNN(MRMR): Result Analysis :)
 % % Accuracy 
-knnMRMR_best = fitcknn(Xtrain(:,idxMRMR(1:5)), Ytrain,'NumNeighbors',10,'Standardize',1);
-knnMRMR_pred_best = predict(knnMRMR_best, Xtest(:, idxMRMR(1:5)));
+knnMRMR_best = fitcknn(Xtrain(:,idxMRMR(1:5)), Ytrain,'NumNeighbors',10,'Standardize',1, );
+knnMRMR_pred_best = predict(knnMRMR_best, Xtrain(:,idxMRMR(1:5)));
 figure;
-disp(mean(knnMRMR_pred == Ytest));
+disp(mean(knnMRMR_pred_best == Ytest));
 cm10 = confusionchart(Ytest, knnMRMR_pred_best);
 title('Confusion Matrix: KNN MRMR')
 
-%% Random Forest
-
-rfMRMR = fitensemble(Xtrain(:,idxMRMR(1:5)),Ytrain, 'Bag', 100, 'Tree', 'Type', 'classification');
-rfMRMR_pred = predict(knnMRMR_best, Xtest(:, idxMRMR(1:5)));
-disp(mean(rfMRMR_pred == Ytest));
-
-%% Random Forest(MRMR): Result Analysis :)
-
-rfMRMR_best = fitensemble(Xtrain(:,idxMRMR(1:5)),Ytrain, 'Bag', 100, 'Tree', 'Type', 'classification');
-rfMRMR_pred_best = predict(knnMRMR_best, Xtest(:, idxMRMR(1:5)));
-figure;
-cm10 = confusionchart(Ytest, rfMRMR_pred_best);
-title('Confusion Matrix: rf MRMR')
+% %% Random Forest
+% % 
+% rfMRMR = fitensemble(Xtrain(:,idxMRMR(1:5)),Ytrain, 'Bag', 100, 'Tree', 'Type', 'classification', CVPartition',cvKF10);
+% rfMRMR_pred = kfoldPredict(knnMRMR_best);
+% disp(mean(rfMRMR_pred == Ytest));
+% 
+% %% Random Forest(MRMR): Result Analysis :)
+% 
+% rfMRMR_best = fitensemble(Xtrain(:,idxMRMR(1:5)),Ytrain, 'Bag', 100, 'Tree', 'Type', 'classification', CVPartition',cvKF10);
+% rfMRMR_pred_best = kfoldPredict(knnMRMR_best);
+% figure;
+% cm10 = confusionchart(Ytest, rfMRMR_pred_best);
+% title('Confusion Matrix: rf MRMR')
 

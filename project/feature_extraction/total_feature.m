@@ -58,7 +58,8 @@ for i = pos
 end 
 
 %% activity 
-%feature: caffein(lasttime), smoking(times a day), light movement(duration), medium(duration), heavy(duration)
+%feature: alcohol(end time), medium(duration), heavy(duration),
+%screenTime
 activityFeatures = readmatrix(path_directory + "/activity.xlsx");
 total = [total, activityFeatures];
 
